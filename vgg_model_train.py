@@ -1,3 +1,4 @@
+# Kullanılan kütüphanelerin içeri aktarılması
 import os
 import numpy as np
 import matplotlib.pyplot as plt
@@ -19,7 +20,7 @@ import scipy
 
 
 
-
+# Eğitim datası için DataGenerator objesi oluşturması
 train_datagen = ImageDataGenerator(rescale = 1.0/255.0,
                                   horizontal_flip = True,
                                   fill_mode = 'nearest',
@@ -29,6 +30,8 @@ train_datagen = ImageDataGenerator(rescale = 1.0/255.0,
                                   height_shift_range=0.2,
                                   rotation_range=0.4)
 
+
+# Eğitim datasının özelliklerinin tanımlanması
 train_data = train_datagen.flow_from_directory('preprocess/train',
                                                    batch_size = 5,
                                                    target_size = (350,350),
@@ -37,7 +40,12 @@ train_data = train_datagen.flow_from_directory('preprocess/train',
 
 
 
+
+# Doğrulama datası için DataGenerator objesi oluşturması
 val_datagen = ImageDataGenerator(rescale = 1.0/255.0)
+
+
+# Doğrulama datasının özelliklerinin tanımlanması
 val_data = val_datagen.flow_from_directory('preprocess/valid',
                                                    batch_size = 5,
                                                    target_size = (350,350),
@@ -46,13 +54,19 @@ val_data = val_datagen.flow_from_directory('preprocess/valid',
 
 
 
+
+# Test datası için DataGenerator objesi oluşturması
 test_datagen = ImageDataGenerator(rescale = 1.0/255.0)
+
+# Test datasının özelliklerinin tanımlanması
 test_data = test_datagen.flow_from_directory('preprocess/test',
                                                    batch_size = 5,
                                                    target_size = (350,350),
                                                    class_mode = 'categorical')
 
 
+
+# Kullanılacak temel modelin tanımlanması
 base_model = VGG16(
     weights='imagenet',
     include_top=False, 
@@ -62,33 +76,18 @@ base_model = VGG16(
 
 
 
-# We define the number of classes in the classification problem.
+# Modelde kaç sınıf olduğu parametresinin tanımlanması
 NUM_CLASSES = 4
 
-# First, a sequential model is created, which will be used to build the VGG model.
+# Modelin probleme uygun bir şekilde düzenlenmesi
 vgg_model = Sequential()
-
-# Se agrega una capa al modelo. base_model el modelo anteriormente preentrenado.
 vgg_model.add(base_model)
-
-# A flattening layer (Flatten) is added. This layer converts the output from the 
-# previous layer (which is likely a three-dimensional tensor) into a one-dimensional vector.
 vgg_model.add(layers.Flatten())
-
-# A Dropout layer is added with a dropout rate of 25%. Dropout is used to prevent overfitting 
-# by randomly disconnecting some neurons during training.
 vgg_model.add(layers.Dropout(0.25))
-
-# A dense layer is added with NUM_CLASSES neurons and a sigmoid activation function. 
-# This layer produces the final output of the model.
 vgg_model.add(layers.Dense(NUM_CLASSES, activation='sigmoid'))
-
-# The first layer of the model (base_model) is frozen, so the weights of this layer 
-# will not be updated during training.
 vgg_model.layers[0].trainable = False
 
-# The model is compiled with the 'categorical_crossentropy' loss function,
-#' adam' optimizer, and the accuracy metric. This prepares the model for training.
+# Modelde kullanılacak algoritmaların tanımlanması
 vgg_model.compile(
     loss='categorical_crossentropy',
     optimizer='adam',
@@ -96,7 +95,7 @@ vgg_model.compile(
 )
 
 
-
+# En iyi modeli yakalayabilmek için CheckPoint tanımlanması
 mc = ModelCheckpoint(
     filepath="./ct_vgg_best_model.hdf5",
     monitor= 'val_accuracy', 
@@ -110,7 +109,7 @@ call_back = [ mc]
 
 
 
-
+# Modelin eğitilmesi
 vgg = vgg_model.fit(
     train_data, 
     steps_per_epoch = train_data.samples//train_data.batch_size, 
@@ -124,13 +123,13 @@ vgg = vgg_model.fit(
 
 
 
-
+# En iyi modelin kaydedilmesi
 model = load_model("./ct_vgg_best_model.hdf5")
 
 
 
 
-# Checking the Accuracy of the Model 
+# Doğrulama skorunun hesaplanması
 accuracy_vgg = model.evaluate_generator(generator= test_data)[1] 
 print(f"The accuracy of the model is = {accuracy_vgg*100} %")
 loss_vgg = model.evaluate_generator(generator= test_data)[0] 

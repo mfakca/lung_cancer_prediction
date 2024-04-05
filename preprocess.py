@@ -6,6 +6,8 @@ import cv2
 import os
 
 
+
+# Ön işleme adımları için oluşturulan fonksiyon
 def preprocess(image_path):
     
         try:
@@ -40,6 +42,8 @@ try:
 except: pass
 
 
+
+# Bütün görsellerin ön işleme aşamalarından geçmesi için kullanılan döngü
 for i in os.listdir(base_path):
     
     try:
