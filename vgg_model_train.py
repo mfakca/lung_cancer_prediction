@@ -62,7 +62,8 @@ test_datagen = ImageDataGenerator(rescale = 1.0/255.0)
 test_data = test_datagen.flow_from_directory('preprocess/test',
                                                    batch_size = 5,
                                                    target_size = (350,350),
-                                                   class_mode = 'categorical')
+                                                   class_mode = 'categorical',
+                                                   shuffle = False)
 
 
 
@@ -91,7 +92,7 @@ vgg_model.layers[0].trainable = False
 vgg_model.compile(
     loss='categorical_crossentropy',
     optimizer='adam',
-    metrics=['accuracy']
+    metrics=['accuracy',tf.keras.metrics.Recall(), tf.keras.metrics.Precision()]
 )
 
 
@@ -134,3 +135,46 @@ accuracy_vgg = model.evaluate_generator(generator= test_data)[1]
 print(f"The accuracy of the model is = {accuracy_vgg*100} %")
 loss_vgg = model.evaluate_generator(generator= test_data)[0] 
 print(f"The loss of the model is = {loss_vgg}")
+
+
+
+
+
+
+
+from sklearn.metrics import precision_score, recall_score, accuracy_score, confusion_matrix
+import seaborn as sns
+
+# Test veri seti üzerinde tahminler yapılması
+Y_pred = model.predict(test_data)
+y_pred = np.argmax(Y_pred, axis=-1)
+
+# Gerçek etiketleri alınması
+y_true = test_data.classes
+
+# Confusion matrix oluşturulması
+conf_matrix = confusion_matrix(y_true, y_pred)
+
+# Confusion matrix'i görselleştirilmesi
+plt.figure(figsize=(10, 8))
+sns.heatmap(conf_matrix, annot=True, fmt="d", cmap="Blues", xticklabels=list(test_data.class_indices.keys()), yticklabels=list(test_data.class_indices.keys()))
+plt.title('Confusion Matrix')
+plt.ylabel('Gerçek Sınıflar')
+plt.xlabel('Tahmin Edilen Sınıflar')
+plt.xticks(rotation=45)  
+plt.yticks(rotation=45)  
+
+plt.show()
+
+
+
+
+# Precision, Recall ve Accuracy hesaplanması
+precision = precision_score(y_true, y_pred, average='macro')
+recall = recall_score(y_true, y_pred, average='macro')
+
+
+
+print(f"Precision: {precision}")
+print(f"Recall: {recall}")
+print(f"Accuracy: {accuracy_score(y_true, y_pred)}")
